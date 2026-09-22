@@ -181,6 +181,19 @@ describe('csv answer log export', () => {
     expect(lines[3].endsWith(',0,10,"judge ruling, Q1",' + lines[3].split(',').pop())).toBe(true);
   });
 
+  it('defangs formula injection in text cells but keeps negative numbers numeric', () => {
+    const base = drawn();
+    const m0 = base.matches[0];
+    const teamAId = (m0.a as { teamId: string }).teamId;
+    // give team A of the first match a name a spreadsheet would treat as a formula
+    const t = { ...base, teams: base.teams.map((tm) => (tm.id === teamAId ? { ...tm, shortName: '=cmd()', name: '=cmd()' } : tm)) };
+    const csv = matchLogCsv({ ...t, matches: [m0] }, { ...m0, events: [makeEvent(m0, 'wrong', 'a', rules)] });
+    const row = csv.split('\r\n')[1];
+    expect(row).toContain("'=cmd()"); // team name is defanged with a leading quote
+    expect(row).not.toContain(',=cmd()'); // never a bare formula cell
+    expect(row).toContain(',-5,'); // the numeric point delta is untouched
+  });
+
   it('combines every match into one file', () => {
     const t = drawn();
     const withEvents = {

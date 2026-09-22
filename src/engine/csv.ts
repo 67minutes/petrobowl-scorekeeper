@@ -28,9 +28,14 @@ const HEADERS = [
   'Timestamp',
 ];
 
-/** Quote a CSV cell if it contains a comma, quote or newline (RFC 4180). */
+/**
+ * Escape a CSV cell: defang spreadsheet formula injection, then quote per RFC 4180.
+ * Only string cells (team names, labels, notes) are defanged — numeric cells are
+ * left alone so negative point deltas and scores stay as real numbers in Excel.
+ */
 function esc(v: string | number): string {
-  const s = String(v ?? '');
+  let s = String(v ?? '');
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
