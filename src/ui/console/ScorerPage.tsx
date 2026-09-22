@@ -3,7 +3,8 @@ import { matchOps, timerOps, useStore } from '../../store/store';
 import type { EventKind, Match, Side } from '../../engine/types';
 import { entrantLabel, matchTeams, teamName } from '../../engine/resolve';
 import { matchScore, matchWinner, needsSuddenDeath, other, questionState, timerRemaining } from '../../engine/scoring';
-import { formatClock, useNow } from '../hooks';
+import { formatClock, downloadText, useNow } from '../hooks';
+import { matchLogCsv, safeFileName } from '../../engine/csv';
 import { playableMatches } from './SchedulePage';
 
 const KEYS = { a: { correct: 'q', wrong: 'w' }, b: { correct: 'o', wrong: 'p' } } as const;
@@ -284,8 +285,21 @@ function Scorer({ m }: { m: Match }) {
       </section>
 
       <section className="card">
-        <h3>Answer log</h3>
-        <div className="log">
+        <div className="row">
+          <h3 style={{ margin: 0 }}>Answer log</h3>
+          <span className="muted">{m.events.length} entries</span>
+          <div className="spacer" />
+          <button
+            className="btn btn-ghost btn-sm"
+            disabled={m.events.length === 0}
+            onClick={() =>
+              downloadText(`${safeFileName(`${t.name}_${m.label ?? 'match'}_log`)}.csv`, matchLogCsv(t, m), 'text/csv;charset=utf-8')
+            }
+          >
+            ⬇ Export CSV
+          </button>
+        </div>
+        <div className="log" style={{ marginTop: 10 }}>
           {m.events.length === 0 && <div className="muted">No answers yet.</div>}
           {[...m.events].reverse().map((e) => (
             <div key={e.id} className="log-item">

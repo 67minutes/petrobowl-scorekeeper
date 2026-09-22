@@ -8,6 +8,7 @@ import { swissPairs } from './formats/swiss';
 import { makeEvent, matchScore, matchWinner, needsSuddenDeath, questionState } from './scoring';
 import { groupStandings } from './standings';
 import { resolveEntrant, describeRef } from './resolve';
+import { allLogsCsv, matchLogCsv } from './csv';
 import { applyTemplate, blankTournament, makeTeams, defaultScoring } from './presets';
 import type { Match, Side, Tournament } from './types';
 
@@ -156,6 +157,38 @@ describe('standings', () => {
     const rows = groupStandings(t, s, 'League').rows;
     expect(rows.map((r) => r.teamId)).toEqual([B, A]);
     expect(rows.some((r) => r.unresolvedTie)).toBe(false);
+  });
+});
+
+describe('csv answer log export', () => {
+  it('writes a header, running scores, and quotes commas', () => {
+    let m: Match = drawn().matches[0];
+    m = {
+      ...m,
+      events: [
+        makeEvent(m, 'wrong', 'a', rules),
+        makeEvent(m, 'steal-correct', 'b', rules),
+        makeEvent(m, 'adjust', 'a', rules, { delta: 5, note: 'judge ruling, Q1' }),
+      ],
+    };
+    const t = { ...drawn(), matches: [m] };
+    const lines = matchLogCsv(t, m).split('\r\n');
+    expect(lines[0]).toContain('Score A');
+    expect(lines.length).toBe(4); // header + 3 events
+    // running scores: a: -5, then b steal +10, then a +5 -> a=0,b=10
+    expect(lines[1]).toContain(',-5,'); // team A wrong delta
+    expect(lines[3]).toContain('"judge ruling, Q1"'); // comma-containing note is quoted
+    expect(lines[3].endsWith(',0,10,"judge ruling, Q1",' + lines[3].split(',').pop())).toBe(true);
+  });
+
+  it('combines every match into one file', () => {
+    const t = drawn();
+    const withEvents = {
+      ...t,
+      matches: t.matches.map((m, i) => (i < 2 ? { ...m, events: [makeEvent(m, 'correct', 'a', rules)] } : m)),
+    };
+    const rows = allLogsCsv(withEvents, withEvents.matches).split('\r\n');
+    expect(rows.length).toBe(1 + 2); // header + 2 events total
   });
 });
 

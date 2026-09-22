@@ -4,6 +4,8 @@ import { entrantLabel, isByeMatch, matchTeams } from '../../engine/resolve';
 import { matchScore, matchWinner } from '../../engine/scoring';
 import { nextSwissRound } from '../../engine/generate';
 import { stageMatches } from '../../engine/standings';
+import { allLogsCsv, safeFileName } from '../../engine/csv';
+import { downloadText } from '../hooks';
 
 export function playableMatches(matches: Match[]) {
   return matches.filter((m) => !isByeMatch(m)).sort((a, b) => a.order - b.order);
@@ -50,6 +52,16 @@ export function SchedulePage({ onOpen }: { onOpen: () => void }) {
           <p>Matches run in this order. Use the arrows to reorder and click Score to open a match in the scorer.</p>
         </div>
         <div className="spacer" />
+        <button
+          className="btn btn-ghost"
+          disabled={!t.matches.some((m) => m.events.length > 0)}
+          title="Download every match's answer log as one CSV"
+          onClick={() =>
+            downloadText(`${safeFileName(`${t.name}_answer_logs`)}.csv`, allLogsCsv(t, playableMatches(t.matches)), 'text/csv;charset=utf-8')
+          }
+        >
+          ⬇ Export answer logs (CSV)
+        </button>
         <button className="btn" onClick={() => setDisplay({ view: 'schedule' })}>
           Show schedule on big screen
         </button>

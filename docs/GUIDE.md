@@ -79,9 +79,13 @@ Open the **Draw** tab (only for formats with groups).
 2. (Optional) Turn on **Spread same-country teams**, or open **Seeds & locks…** to seed strong teams into different groups or lock a team to a specific group.
 3. Click **Run draw**. Teams are sorted into groups instantly.
 4. To reveal it live to the audience, use **Reveal next ▶** to drop teams in one at a time, or **Reveal all** to show everything.
-5. Want to change something? **Click two teams to swap them.**
+5. Want to change something? **Click two teams to swap them**, or click the **✕** on a team to send it back to unplaced.
 6. When you're happy, click **Confirm groups & generate fixtures**. This creates all the group matches.
 7. For a knockout stage, scroll down and click **Generate bracket**.
+
+### Setting groups by hand (no draw)
+
+Prefer to decide the groups yourself? Click **Set groups manually…** at the top of the Draw tab. You get a list of every team with a group dropdown — just pick a group for each team. **Clear all groups** empties them to start over. Full groups are marked so you can't over-fill them. When every team is placed, click **Confirm groups & generate fixtures** as usual. (You can freely mix this with the random draw and the swap/✕ controls.)
 
 > The draw uses a **seed** (a short code) so the same seed always gives the same draw — handy for transparency. Write it down if you want to prove the draw wasn't rigged.
 
@@ -130,6 +134,15 @@ During a steal, the same letter keys score the steal for the team that has it.
 - Click **End & finalize match**, confirm, and the result is locked in. Standings and the bracket update automatically.
 - **Knockout tie?** In a knockout match that ends level, you'll be offered **sudden death** — the first correct answer wins. The big screen shows a "SUDDEN DEATH" banner.
 - Made a mistake after finalizing? Open the match again and click **Reopen match**.
+
+### Exporting the answer log
+
+Every answer, steal and adjustment is recorded. To save it as a spreadsheet file (CSV, opens in Excel or Google Sheets):
+
+- **One match:** in the Scorer, click **⬇ Export CSV** above the answer log.
+- **The whole tournament:** on the **Schedule** tab, click **⬇ Export answer logs (CSV)** to get one file covering every match.
+
+Each row shows the match, question number, which team answered, the action, points, the running score after that answer, any note, and a timestamp — handy for records or reviewing disputes.
 
 ---
 

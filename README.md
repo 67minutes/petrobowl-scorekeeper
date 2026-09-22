@@ -9,8 +9,8 @@
 ## What it does
 
 - **Any format** — groups, round robin, single-elimination knockout, Swiss, or groups → knockout playoffs. Fully customizable scoring, group points and tiebreakers.
-- **Group draw** — a fair, repeatable randomizer with a live team-by-team reveal on the big screen. Keep same-country teams apart, seed or lock teams, or drag to adjust.
-- **Live match scoring** — big correct / wrong / steal buttons and keyboard shortcuts, an optional timer, undo, and judge adjustments. Knockout ties go to sudden death.
+- **Group draw** — a fair, repeatable randomizer with a live team-by-team reveal on the big screen. Keep same-country teams apart, seed or lock teams, adjust by swapping, or **set the groups entirely by hand**.
+- **Live match scoring** — big correct / wrong / steal buttons and keyboard shortcuts, an optional timer, undo, and judge adjustments. Knockout ties go to sudden death. Export any match's (or the whole event's) **answer log to CSV**.
 - **Two synced screens** — the **laptop** is the operator console (all the controls); the **projector** shows a clean scoreboard, standings, bracket or draw. They update together, instantly.
 - **Petrobowl APAC 2026 preset** — 13 teams, groups A–C of 3 and D of 4, top 2 advance to an 8-team knockout, +10 / −5 scoring. Load it and go.
 

@@ -79,6 +79,7 @@ function GroupDraw({ stage: s }: { stage: Stage }) {
   const [error, setError] = useState('');
   const [picked, setPicked] = useState<string | null>(null);
   const [showLocks, setShowLocks] = useState(false);
+  const [showManual, setShowManual] = useState(false);
   const opts = s.drawOptions ?? { separateCountries: false, locks: {}, pots: [] };
   const seeded = new Set(opts.pots[0] ?? []);
 
@@ -125,6 +126,21 @@ function GroupDraw({ stage: s }: { stage: Stage }) {
     setPicked(null);
   };
 
+  // Manual allocation: put a team directly into a group (or `null` to unplace it).
+  const assign = (id: string, group: string | null) =>
+    setStage((st) => ({
+      ...st,
+      generated: false,
+      draw: undefined,
+      groups: st.groups!.map((g) => {
+        const without = g.teamIds.filter((x) => x !== id);
+        return g.name === group ? { ...g, teamIds: [...without, id] } : { ...g, teamIds: without };
+      }),
+    }));
+
+  const clearGroups = () =>
+    setStage((st) => ({ ...st, generated: false, draw: undefined, groups: st.groups!.map((g) => ({ ...g, teamIds: [] })) }));
+
   const setRevealed = (n: number) =>
     setStage((st) => (st.draw ? { ...st, draw: { ...st.draw, revealed: Math.max(0, Math.min(n, st.draw.steps.length)) } } : st), false);
 
@@ -163,11 +179,57 @@ function GroupDraw({ stage: s }: { stage: Stage }) {
           <button className="btn btn-ghost btn-sm" onClick={() => setShowLocks(!showLocks)}>
             {showLocks ? 'Hide' : 'Seeds & locks…'}
           </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowManual(!showManual)}>
+            {showManual ? 'Hide' : 'Set groups manually…'}
+          </button>
           <div className="spacer" />
           <button className="btn btn-gold" onClick={doDraw}>
             Run draw
           </button>
         </div>
+        {showManual && (
+          <div style={{ marginTop: 12 }}>
+            <div className="row" style={{ marginBottom: 8 }}>
+              <p className="muted" style={{ margin: 0, flex: 1 }}>
+                Assign each team to a group by hand — no draw needed. You can also drag on the group cards below (click two
+                teams to swap, or ✕ to unplace).
+              </p>
+              <button className="btn btn-ghost btn-sm" onClick={clearGroups}>
+                Clear all groups
+              </button>
+            </div>
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: 6 }}>
+              {t.teams.map((tm) => {
+                const inGroup = s.groups!.find((g) => g.teamIds.includes(tm.id));
+                const full = (g: string) => {
+                  const grp = s.groups!.find((x) => x.name === g);
+                  return !!grp && grp.name !== inGroup?.name && grp.teamIds.length >= grp.size;
+                };
+                return (
+                  <div key={tm.id} className="row" style={{ gap: 8 }}>
+                    <span style={{ flex: 1, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {tm.shortName} <span className="muted">· {tm.name}</span>
+                    </span>
+                    <select
+                      className="select"
+                      style={{ width: 150 }}
+                      value={inGroup?.name ?? ''}
+                      onChange={(e) => assign(tm.id, e.target.value || null)}
+                    >
+                      <option value="">— Unplaced —</option>
+                      {s.groups!.map((g) => (
+                        <option key={g.name} value={g.name} disabled={full(g.name)}>
+                          Group {g.name}
+                          {full(g.name) ? ' (full)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {showLocks && (
           <div style={{ marginTop: 12 }}>
             <p className="muted" style={{ margin: '0 0 8px' }}>
@@ -255,9 +317,20 @@ function GroupDraw({ stage: s }: { stage: Stage }) {
                 style={{ cursor: 'pointer', outline: picked === id ? '2px solid var(--gold-500)' : undefined }}
                 onClick={() => onChip(id)} title="Click two teams to swap them">
                 <span className="short">{teamName(t, id, true)}</span>
-                <span className="muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className="muted" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {teamName(t, id)}
                 </span>
+                <button
+                  className="btn btn-ghost btn-icon btn-sm"
+                  title="Remove from group"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    assign(id, null);
+                    if (picked === id) setPicked(null);
+                  }}
+                >
+                  ✕
+                </button>
               </div>
             ))}
             {unplaced.length > 0 && g.teamIds.length < g.size && (
