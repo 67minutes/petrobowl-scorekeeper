@@ -1,0 +1,229 @@
+.console {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.console > *:not(svg) {
+  position: relative;
+}
+.console-header {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 14px 28px;
+  flex-wrap: wrap;
+}
+.console-title {
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+.console-subtitle {
+  font-size: 0.8rem;
+  color: var(--amber-400);
+  font-weight: 500;
+}
+.screen-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(242, 176, 30, 0.35);
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+}
+.screen-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--amber-400);
+  font-weight: 600;
+}
+.screen-control .select {
+  border-radius: 999px;
+}
+.console-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(242, 176, 30, 0.25);
+  overflow-x: auto;
+}
+.tab {
+  background: transparent;
+  border: 0;
+  color: var(--cream-200);
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 12px 12px 0 0;
+  opacity: 0.75;
+}
+.tab:hover {
+  opacity: 1;
+}
+.tab.active {
+  opacity: 1;
+  color: var(--ink);
+  background: var(--gold-500);
+}
+.console-main {
+  padding: 24px 28px 60px;
+  flex: 1;
+}
+.page {
+  display: grid;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.page-head h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+.page-head p {
+  margin: 2px 0 0;
+  color: var(--cream-200);
+  opacity: 0.85;
+}
+
+/* ---- scorer ---- */
+.scorer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.team-panel {
+  border-radius: 22px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: linear-gradient(170deg, var(--maroon-600), var(--maroon-800));
+  border: 2px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.team-panel.steal {
+  border-color: var(--gold-500);
+  box-shadow: 0 0 0 4px rgba(242, 176, 30, 0.25);
+}
+.team-panel .tp-name {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.15;
+  min-height: 2.3em;
+}
+.team-panel .tp-score {
+  font-size: 5.5rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.tp-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.tp-buttons .btn {
+  padding: 16px 10px;
+  font-size: 1.05rem;
+  border-radius: 16px;
+}
+.scorer-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.qbox {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.qbox .big {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.log {
+  max-height: 320px;
+  overflow: auto;
+  font-size: 0.85rem;
+}
+.log-item {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--cream-300);
+}
+.banner {
+  border-radius: 14px;
+  padding: 10px 16px;
+  font-weight: 700;
+  text-align: center;
+}
+.banner-gold {
+  background: var(--gold-500);
+  color: var(--ink);
+}
+.banner-red {
+  background: var(--bad);
+  color: #fff;
+}
+
+/* ---- groups/draw ---- */
+.group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.group-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.team-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--cream-100);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.team-chip .short {
+  font-weight: 700;
+  min-width: 96px;
+  white-space: nowrap;
+}
+
+/* ---- schedule ---- */
+.match-row {
+  display: grid;
+  grid-template-columns: 70px 90px 1fr 90px 1fr 110px auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--cream-200);
+}
+.match-row .score {
+  text-align: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.match-row .right {
+  text-align: right;
+}
+.match-row.live {
+  background: rgba(226, 81, 63, 0.08);
+}
