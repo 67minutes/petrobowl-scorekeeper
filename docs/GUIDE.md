@@ -89,6 +89,16 @@ Prefer to decide the groups yourself? Click **Set groups manually…** at the to
 
 > The draw uses a **seed** (a short code) so the same seed always gives the same draw — handy for transparency. Write it down if you want to prove the draw wasn't rigged.
 
+### Choosing the knockout teams by hand
+
+The knockout bracket normally fills itself from the group results (for APAC: Winner A vs Runner-up B, and so on). To place teams yourself, for example after a judges' decision or a tie you settled off-screen:
+
+1. On the **Draw** tab, scroll to the **Knockout Stage**. Each bracket slot has a dropdown.
+2. Pick a team. The list shows where each team finished (e.g. "ITB · Group D · 1st (4 pts)"). The slot gets a gold **Manual** tag.
+3. To go back to the automatic qualifier, pick the **Auto · …** option in that slot, or click **Reset all to automatic**.
+
+You can do this before or after generating the bracket, and it **keeps all group results and any other knockout results**. The only match that's affected is one whose team you change after it already has scores; it gets reset, and you're asked to confirm first. If the same team ends up in two slots, a red **Duplicate** warning appears.
+
 ---
 
 ## The schedule

@@ -3,7 +3,9 @@ import { useStore } from '../../store/store';
 import type { EntrantRef, Stage, Tournament } from '../../engine/types';
 import { runDraw } from '../../engine/draw';
 import { generateStage } from '../../engine/generate';
-import { describeRef, teamName } from '../../engine/resolve';
+import { describeRef, resolveEntrant, teamName } from '../../engine/resolve';
+import { groupStandings } from '../../engine/standings';
+import { autoSlots, matchHasResult, resetKnockoutSlots, sameRef, setKnockoutSlot, slotMatch } from '../../engine/bracket';
 import { randomSeed } from '../../engine/util';
 
 export function DrawPage() {
@@ -359,35 +361,103 @@ function GroupDraw({ stage: s }: { stage: Stage }) {
   );
 }
 
+const ORD = ['', '1st', '2nd', '3rd'];
+const ordinal = (n: number) => ORD[n] ?? `${n}th`;
+
 function KnockoutSetup({ stage: s, index }: { stage: Stage; index: number }) {
   const t = useStore((x) => x.tournament);
   const update = useStore((x) => x.update);
   const generate = useGenerate();
   const slots = s.slots ?? [];
   const fedByStage = index > 0;
+  const from = fedByStage ? t.stages[index - 1] : undefined;
+  const auto = autoSlots(t, s.id);
 
-  const setSlot = (i: number, ref: EntrantRef) =>
-    update((x) => ({
-      ...x,
-      stages: x.stages.map((st) => (st.id === s.id ? { ...st, slots: slots.map((r, j) => (j === i ? ref : r)) } : st)),
-    }));
+  // "Group A · 1st" style hints so the operator can see where each team finished.
+  const standing = new Map<string, string>();
+  if (from && (from.type === 'groups' || from.type === 'swiss')) {
+    const groups = from.type === 'groups' ? (from.groups ?? []).map((g) => g.name) : [undefined];
+    for (const g of groups) {
+      for (const r of groupStandings(t, from, g).rows) {
+        const where = g && g !== 'League' ? `Group ${g}` : from.name;
+        standing.set(r.teamId, `${where} · ${ordinal(r.rank)} (${r.pts} pts)`);
+      }
+    }
+  }
+
+  const setSlot = (i: number, ref: EntrantRef) => {
+    const target = slotMatch(t, s, i);
+    const later = t.matches.some((m) => m.stageId === s.id && m.round > 1 && matchHasResult(m));
+    if (target && matchHasResult(target.match)) {
+      const msg =
+        `${target.match.label} already has scores. Changing a team resets that match.` +
+        (later ? '\n\nLater knockout rounds also have results, so check them afterwards.' : '') +
+        '\n\nContinue?';
+      if (!window.confirm(msg)) return;
+    }
+    update((x) => setKnockoutSlot(x, s.id, i, ref));
+  };
+
+  const resetAll = () => {
+    const touched = slots.some((r, i) => {
+      const m = slotMatch(t, s, i)?.match;
+      return !!auto?.[i] && !sameRef(r, auto[i]) && !!m && matchHasResult(m);
+    });
+    if (touched && !window.confirm('Some changed matches already have scores and will be reset. Continue?')) return;
+    update((x) => resetKnockoutSlots(x, s.id));
+  };
 
   const pairs: [number, number][] = [];
   for (let i = 0; i < slots.length; i += 2) pairs.push([i, i + 1]);
 
+  const resolved = slots.map((r) => resolveEntrant(t, r));
+  const dupes = new Set(resolved.filter((id, i) => id && resolved.indexOf(id) !== i));
+  const manualCount = fedByStage && auto ? slots.filter((r, i) => auto[i] && !sameRef(r, auto[i])).length : 0;
+
   const slotEditor = (i: number) => {
     const ref = slots[i];
-    if (fedByStage) return <span style={{ fontWeight: 600 }}>{describeRef(t, ref)}</span>;
-    const value = ref.kind === 'team' ? ref.teamId : ref.kind;
+    const autoRef = auto?.[i];
+    const isManual = !!autoRef && !sameRef(ref, autoRef);
+    let value: string;
+    if (ref.kind === 'team') value = ref.teamId;
+    else if (fedByStage) value = isManual ? ref.kind : 'auto';
+    else value = ref.kind;
+    const autoTeam = autoRef ? resolveEntrant(t, autoRef) : null;
     return (
-      <select className="select" value={value}
-        onChange={(e) => setSlot(i, e.target.value === 'bye' ? { kind: 'bye' } : e.target.value === 'tbd' ? { kind: 'tbd' } : { kind: 'team', teamId: e.target.value })}>
-        <option value="tbd">TBD</option>
-        <option value="bye">BYE</option>
-        {t.teams.map((tm) => (
-          <option key={tm.id} value={tm.id}>{tm.shortName} · {tm.name}</option>
-        ))}
-      </select>
+      <>
+        <select
+          className="select"
+          style={{ flex: 1, minWidth: 0, fontWeight: isManual ? 700 : 500 }}
+          value={value}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === 'auto' && autoRef) setSlot(i, autoRef);
+            else if (v === 'bye') setSlot(i, { kind: 'bye' });
+            else if (v === 'tbd') setSlot(i, { kind: 'tbd' });
+            else setSlot(i, { kind: 'team', teamId: v });
+          }}
+        >
+          {fedByStage && autoRef ? (
+            <option value="auto">
+              Auto · {describeRef(t, autoRef)}
+              {autoTeam ? ` (${teamName(t, autoTeam, true)})` : ''}
+            </option>
+          ) : (
+            <>
+              <option value="tbd">TBD</option>
+              <option value="bye">BYE</option>
+            </>
+          )}
+          {t.teams.map((tm) => (
+            <option key={tm.id} value={tm.id}>
+              {tm.shortName}
+              {standing.has(tm.id) ? ` · ${standing.get(tm.id)}` : ` · ${tm.name}`}
+            </option>
+          ))}
+        </select>
+        {isManual && <span className="pill pill-gold">Manual</span>}
+        {resolved[i] && dupes.has(resolved[i]!) && <span className="pill pill-live">Duplicate</span>}
+      </>
     );
   };
 
@@ -398,25 +468,42 @@ function KnockoutSetup({ stage: s, index }: { stage: Stage; index: number }) {
         <span className="pill pill-soft">
           Knockout · {slots.length} slots{s.thirdPlace ? ' · 3rd-place match' : ''}
         </span>
+        {manualCount > 0 && <span className="pill pill-gold">{manualCount} set manually</span>}
         <div className="spacer" />
+        {fedByStage && manualCount > 0 && (
+          <button className="btn btn-ghost btn-sm" onClick={resetAll}>
+            Reset all to automatic
+          </button>
+        )}
         <button className="btn btn-gold" onClick={() => generate(s)} disabled={slots.length < 2}>
           {s.generated ? 'Regenerate bracket' : 'Generate bracket'}
         </button>
       </div>
       <p className="muted">
         {fedByStage
-          ? `Qualifiers from ${t.stages[index - 1].name} fill in automatically once each group is complete. You can generate the bracket now.`
+          ? `Each slot fills automatically from ${from?.name} once its group is complete. To choose a team yourself, pick it from the slot's dropdown; pick "Auto" to go back. Changing a slot keeps the group results and any other knockout results.`
           : 'Seeded 1 v N with byes for the top seeds. Change any slot below.'}
       </p>
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: 10 }}>
-        {pairs.map(([x, y], k) => (
-          <div key={k} className="card-soft">
-            <div className="muted" style={{ fontWeight: 700, marginBottom: 6 }}>Match {k + 1}</div>
-            <div className="row" style={{ gap: 8 }}>{slotEditor(x)}</div>
-            <div className="muted" style={{ margin: '4px 0' }}>vs</div>
-            <div className="row" style={{ gap: 8 }}>{slotEditor(y)}</div>
-          </div>
-        ))}
+      {dupes.size > 0 && (
+        <div className="banner banner-red" style={{ marginBottom: 10 }}>
+          {[...dupes].map((id) => teamName(t, id, true)).join(', ')} {dupes.size === 1 ? 'is' : 'are'} in the bracket more than once.
+        </div>
+      )}
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(360px, 100%), 1fr))', gap: 10 }}>
+        {pairs.map(([x, y], k) => {
+          const m = slotMatch(t, s, x)?.match;
+          return (
+            <div key={k} className="card-soft">
+              <div className="row" style={{ marginBottom: 6 }}>
+                <b className="muted">{m?.label ?? `Match ${k + 1}`}</b>
+                {m && matchHasResult(m) && <span className="pill pill-soft">{m.status === 'final' ? 'Played' : 'In progress'}</span>}
+              </div>
+              <div className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>{slotEditor(x)}</div>
+              <div className="muted" style={{ margin: '4px 0' }}>vs</div>
+              <div className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>{slotEditor(y)}</div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
