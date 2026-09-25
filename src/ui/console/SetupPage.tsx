@@ -3,7 +3,7 @@ import { useStore } from '../../store/store';
 import type { Stage, Tiebreak, Tournament } from '../../engine/types';
 import { apac2026 } from '../../engine/presets/apac2026';
 import { TEMPLATES, applyTemplate, blankTournament, type TemplateId } from '../../engine/presets';
-import { crossoverSlots, rankedSlots } from '../../engine/formats/groupsToKnockout';
+import { autoSlots } from '../../engine/bracket';
 import { groupLetter } from '../../engine/util';
 
 const TB_LABEL: Record<Tiebreak, string> = {
@@ -17,12 +17,8 @@ const TB_LABEL: Record<Tiebreak, string> = {
 export function refreshKnockout(t: Tournament, koId: string): Tournament {
   const idx = t.stages.findIndex((s) => s.id === koId);
   const ko = t.stages[idx];
-  const from = t.stages[idx - 1];
-  if (!ko || ko.type !== 'knockout' || !from) return t;
-  const slots =
-    from.type === 'groups' && (from.groups?.length ?? 0) > 1
-      ? crossoverSlots(from)
-      : rankedSlots(from, from.advance ?? 4);
+  const slots = autoSlots(t, koId);
+  if (!ko || ko.type !== 'knockout' || !slots) return t;
   return {
     ...t,
     stages: t.stages.map((s) => (s.id === koId ? { ...s, slots, generated: false } : s)),

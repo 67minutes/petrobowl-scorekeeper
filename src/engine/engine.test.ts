@@ -9,6 +9,7 @@ import { makeEvent, matchScore, matchWinner, needsSuddenDeath, questionState } f
 import { groupStandings } from './standings';
 import { resolveEntrant, describeRef } from './resolve';
 import { allLogsCsv, matchLogCsv } from './csv';
+import { autoSlots, firstRoundMatches, resetKnockoutSlots, setKnockoutSlot } from './bracket';
 import { applyTemplate, blankTournament, makeTeams, defaultScoring } from './presets';
 import type { Match, Side, Tournament } from './types';
 
@@ -157,6 +158,54 @@ describe('standings', () => {
     const rows = groupStandings(t, s, 'League').rows;
     expect(rows.map((r) => r.teamId)).toEqual([B, A]);
     expect(rows.some((r) => r.unresolvedTie)).toBe(false);
+  });
+});
+
+describe('manual bracket slots', () => {
+  it('overrides a qualifier in a generated bracket without touching other results', () => {
+    let t = drawn();
+    const ko = t.stages[1];
+    t = generateStage(t, ko.id);
+    // give group matches results, and score QF2 (untouched by the change)
+    t = { ...t, matches: t.matches.map((m) => (m.stageId === t.stages[0].id ? playTo(m, 40, 20) : m)) };
+    const qf = firstRoundMatches(t, t.stages[1]);
+    t = { ...t, matches: t.matches.map((m) => (m.id === qf[1].id ? { ...m, events: [makeEvent(m, 'correct', 'a', rules)], status: 'live' as const } : m)) };
+    const pick = t.teams[5].id;
+
+    const next = setKnockoutSlot(t, ko.id, 0, { kind: 'team', teamId: pick });
+    const nqf = firstRoundMatches(next, next.stages[1]);
+    expect(resolveEntrant(next, nqf[0].a)).toBe(pick); // QF1 team A is the manual pick
+    expect(nqf[1].events.length).toBe(1); // QF2 score kept
+    expect(next.matches.filter((m) => m.stageId === t.stages[0].id && m.status === 'final').length).toBe(15); // group results kept
+    expect(next.stages[1].slots![0]).toEqual({ kind: 'team', teamId: pick });
+
+    // back to automatic
+    const reset = resetKnockoutSlots(next, ko.id);
+    expect(reset.stages[1].slots).toEqual(autoSlots(reset, ko.id));
+    expect(firstRoundMatches(reset, reset.stages[1])[0].a).toEqual({ kind: 'rank', stageId: t.stages[0].id, group: 'A', rank: 1 });
+  });
+
+  it('resets a first-round match whose line-up changes after it was scored', () => {
+    let t = drawn();
+    t = generateStage(t, t.stages[1].id);
+    const qf1 = firstRoundMatches(t, t.stages[1])[0];
+    t = { ...t, matches: t.matches.map((m) => (m.id === qf1.id ? { ...m, events: [makeEvent(m, 'correct', 'b', rules)], status: 'final' as const } : m)) };
+    const next = setKnockoutSlot(t, t.stages[1].id, 1, { kind: 'team', teamId: t.teams[0].id });
+    const m = next.matches.find((x) => x.id === qf1.id)!;
+    expect(m.events).toEqual([]);
+    expect(m.status).toBe('scheduled');
+  });
+
+  it('finds first-round matches by label even after the schedule is reordered', () => {
+    let t = drawn();
+    t = generateStage(t, t.stages[1].id);
+    const qf = firstRoundMatches(t, t.stages[1]);
+    // swap the play order of QF1 and QF4
+    t = {
+      ...t,
+      matches: t.matches.map((m) => (m.id === qf[0].id ? { ...m, order: qf[3].order } : m.id === qf[3].id ? { ...m, order: qf[0].order } : m)),
+    };
+    expect(firstRoundMatches(t, t.stages[1]).map((m) => m.label)).toEqual(['QF1', 'QF2', 'QF3', 'QF4']);
   });
 });
 
